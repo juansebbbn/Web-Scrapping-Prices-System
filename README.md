@@ -1,102 +1,242 @@
-# Monitor de Precios de Componentes PC
+# PC Component Price Monitor
 
-## Descripción
+A Spring Boot application that automatically monitors the prices of PC components across multiple online stores and notifies users when a product reaches or falls below a target price.
 
-Aplicación Spring Boot que monitorea automáticamente los precios de componentes de computadora (Se puede generalizar a cualquier articulo, pero yo use componentes de pc) en diferentes tiendas online y alerta cuando encuentra ofertas.
+Although the example focuses on **computer hardware**, the application is generic and can monitor the price of virtually any product by configuring its URL and CSS selectors.
 
-## Funcionalidades
+---
 
-- **Monitoreo Automático**: Revisa precios cada 1 minuto
-- **Múltiples Tiendas**: Amazon, eBay, Compragamer, PcComponentes, Newegg, Best Buy //depende de tu input de datos
-- **Alertas de Precios**: Notificación cuando el precio es igual o menor al objetivo
-- **Historial de Precios**: Registra todos los cambios de precios
-- **Web Scraping**: Extrae precios usando selectores CSS
+# Features
 
-## Arquitectura
+## Automatic Monitoring
 
-- **Backend**: Spring Boot con JPA/Hibernate
-- **Base de Datos**: MySQL
-- **Web Scraping**: Selenuim
-- **Programación de Tareas**: Spring Scheduling
+* Periodically checks product prices (default: every **1 minute**)
+* Monitoring interval can be configured through Spring Scheduling
 
-## Endpoints API
+---
 
-- `POST /api/componentes/addComponente` - Agregar nuevo componente
-- `GET /api/componentes/{id}` - Obtener componente por ID
-- `DELETE /api/componentes/{id}` - Eliminar componente
-- `GET /api/componentes/ejecutarMonitoreo/{id}` - Ejecutar monitoreo manual
+## Multi-Store Support
 
-La aplicación iniciará el monitoreo automático cada minuto (podes modificar el tiempo en la anotacion spring) y mostrará alertas en consola cuando encuentre ofertas.
+The system can monitor any website, provided the correct CSS selectors are supplied.
 
-## Estructura de Datos
+Example stores include:
 
-- **Componente**: ID, nombre, tienda, URL, selectores CSS, precio objetivo
-- **RegistroPrecio**: ID, precio, fecha/hora, componente asociado
-- **Historial**: Lista de registros de precios por componente
+* Amazon
+* eBay
+* CompraGamer
+* PCComponentes
+* Newegg
+* Best Buy
 
-## Ejemplos JSON necesarios para que el programa conozca donde buscar (leer atributos)
+---
 
+## Price Alerts
+
+When the current price is **equal to or lower** than the configured target price, the application generates a notification.
+
+(Current implementation prints alerts to the console.)
+
+---
+
+## Price History
+
+Every detected price is stored, allowing historical price tracking over time.
+
+---
+
+## Web Scraping
+
+Uses **Selenium** together with configurable CSS selectors to extract product prices from web pages.
+
+---
+
+# Technology Stack
+
+* **Java**
+* **Spring Boot**
+* **Spring Data JPA**
+* **Hibernate**
+* **MySQL**
+* **Selenium**
+* **Spring Scheduling**
+
+---
+
+# System Architecture
+
+```text id="3x3rdb"
+Scheduler
+     │
+     ▼
+Monitoring Service
+     │
+     ▼
+ Selenium WebDriver
+     │
+     ▼
+Online Store
+     │
+     ▼
+Price Extractor
+     │
+     ▼
+ MySQL Database
+     │
+     ▼
+ Alert System
+```
+
+---
+
+# REST API
+
+## Add a Component
+
+```http id="a9vs5w"
+POST /api/componentes/addComponente
+```
+
+---
+
+## Get Component by ID
+
+```http id="9yvhzi"
+GET /api/componentes/{id}
+```
+
+---
+
+## Delete Component
+
+```http id="w4gvcz"
+DELETE /api/componentes/{id}
+```
+
+---
+
+## Run Monitoring Manually
+
+```http id="3n9zqx"
+GET /api/componentes/ejecutarMonitoreo/{id}
+```
+
+---
+
+# Automatic Monitoring
+
+The application automatically executes the monitoring task every **minute** using **Spring Scheduling**.
+
+The interval can easily be modified by changing the value in the `@Scheduled` annotation.
+
+Whenever a target price is reached, an alert is displayed.
+
+---
+
+# Data Model
+
+## Component
+
+Represents a monitored product.
+
+| Field         | Description                           |
+| ------------- | ------------------------------------- |
+| ID            | Unique identifier                     |
+| Name          | Product name                          |
+| Store         | Online store                          |
+| URL           | Product page                          |
+| CSS Selectors | Candidate selectors used for scraping |
+| Target Price  | Desired purchase price                |
+
+---
+
+## Price Record
+
+Represents one detected price.
+
+| Field     | Description             |
+| --------- | ----------------------- |
+| ID        | Unique identifier       |
+| Price     | Detected price          |
+| Timestamp | Detection date and time |
+| Component | Associated product      |
+
+---
+
+## Price History
+
+Each component maintains a collection of historical price records, allowing trend analysis over time.
+
+---
+
+# Example JSON Configuration
+
+The application requires product definitions containing the product URL and CSS selectors used to locate the price on each website.
+
+Example:
+
+```json id="v3b4gv"
 [
-
-{
-"nombre": "NVIDIA GeForce RTX 5060 Ti",
-"tienda": "Amazon",
-"precioObjetivo": 450000.0,
-"url": "https://www.amazon.com/s?k=RTX+5060+Ti",
-"selectores": [
-".a-price-whole",
-".a-price .a-offscreen",
-".a-price.a-text-price.a-size-medium.apexPriceToPay",
-".tw-text-price",
-"span[class*='tw:text-price']"
+  {
+    "nombre": "NVIDIA GeForce RTX 5060 Ti",
+    "tienda": "Amazon",
+    "precioObjetivo": 450000.0,
+    "url": "https://www.amazon.com/s?k=RTX+5060+Ti",
+    "selectores": [
+      ".a-price-whole",
+      ".a-price .a-offscreen",
+      ".a-price.a-text-price.a-size-medium.apexPriceToPay",
+      ".tw-text-price",
+      "span[class*='tw:text-price']"
+    ]
+  },
+  {
+    "nombre": "Corsair Vengeance DDR5 32GB",
+    "tienda": "Amazon",
+    "precioObjetivo": 110000.0,
+    "url": "...",
+    "selectores": [
+      ".a-price-whole",
+      ".a-price .a-offscreen"
+    ]
+  }
 ]
-},
+```
 
-{
-"nombre": "Corsair Vengeance DDR5 32GB (2x16GB) 6000MHz",
-"tienda": "Amazon",
-"precioObjetivo": 110000.0,
-"url": "https://www.amazon.com/Corsair-Vengeance-6000MHz-Optimizado-C36-Black/dp/B0BPTKD797",
-"selectores": [
-".a-price-whole",
-".a-price .a-offscreen",
-".a-price.a-text-price.a-size-medium.apexPriceToPay",
-".tw-text-price",
-"span[class*='tw:text-price']"
-]
-},
+Each product can define multiple CSS selectors, improving resilience when websites change their HTML structure.
 
-{
-"nombre": "Samsung 990 Pro 2TB NVMe M.2",
-"tienda": "Amazon",
-"precioObjetivo": 170000.0,
-"url": "https://www.amazon.com/Samsung-990-PRO-Internal-MZ-V9P2T0B/dp/B0BHJJ9Y77",
-"selectores": [
-".a-price-whole",
-".a-price .a-offscreen",
-".a-price.a-text-price.a-size-medium.apexPriceToPay",
-".tw-text-price",
-"span[class*='tw:text-price']"
-]
-},
+---
 
-{
-"nombre": "Intel Core i7-14700K",
-"tienda": "Amazon",
-"precioObjetivo": 501000.0,
-"url": "https://www.amazon.com/-/es/Intel%C2%AE-i7-14700KF-procesador-escritorio-n%C3%BAcleos/dp/B0CGJC178L/ref=sr_1_2?crid=1RY1GMPP51YE&dib=eyJ2IjoiMSJ9.UEY5CWdiocu2CSJ-EvbPL8i3Fuw3z5O16O0timT1vbDlNeWr9AZ160Ra4msa82O-qvgHi-TghHlCDt1pytB4_CMD19f2c9pwggkD-EM2Qxy-PJR0dJ83QbNIBsaNbBhk-qQyetbp7oeS7qubnux67Wax98GWVX4x9Z0K8QJLSO3CRvIC1vytRkW5uVsQI08ssfKmf4bDZlay1J_pzLa_p4OYSMJgwarrcIEAj9gOk1c.Avfu6xTuxhpx5ysHdmDKRoziMnfEl1AS62we3sUyFUY&dib_tag=se&keywords=i7+14700k&qid=1771524555&sprefix=i7+1%2Caps%2C397&sr=8-2",
-"selectores": [
-".a-price-whole",
-".a-price .a-offscreen",
-"[data-a-color='price'] .a-offscreen",
-".a-price.a-text-price.a-size-medium.apexPriceToPay",
-".a-price.a-text-price.apexPriceToPay",
-".a-price-fraction",
-"[class*='a-price']",
-"[class*='price']",
-".tw-text-price",
-"span[class*='tw:text-price']"
-]
-}
+# Workflow
 
-]
+1. Scheduler triggers the monitoring task.
+2. Selenium opens the product page.
+3. CSS selectors are evaluated until a valid price is found.
+4. The detected price is stored in the database.
+5. The application compares the current price with the target price.
+6. If the price meets the condition, an alert is generated.
+
+---
+
+# Future Improvements
+
+* Email notifications
+* Telegram and Discord alerts
+* Browser notifications
+* Support for Playwright
+* Docker deployment
+* Price trend charts
+* User authentication
+* Multiple monitored products per user
+* REST API documentation with Swagger
+* Scheduled reports
+
+---
+
+# Author
+
+**Juan**
+
+## Version
+
+**1.0.0**
+
